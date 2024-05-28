@@ -1,0 +1,5 @@
+1. Python installation is required in the system.
+2. After dumping the GPIO table, place it in different BIOS version folders without changing the file name.
+3. Open CMD and execute Python Compare_GPIO_Table.py.
+4. You will be asked to input the GPIO tables of the two versions you want to compare, in order.
+5. Any differences will be outputted in a differences.txt file. If they are the same, it will display "Pass".
