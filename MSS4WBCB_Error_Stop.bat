@@ -66,6 +66,7 @@ if !COUNTER! LEQ %NUM_ITERATIONS% (
     call :RunMs
     if errorlevel 1 (
         echo Error: Ms test failed on iteration !COUNTER!.
+        pause
         exit /B 1
     )
     goto MsLoop
@@ -83,12 +84,17 @@ set num="2:"
 for /f "tokens=1*delims=:" %%i in ('findstr/n . DEV_loopCount.txt ^| findstr/b %num%') do (
     set /a FailCOUNTER=%%j
 )
-if !FailCOUNTER! GEQ 1 exit /B 1
+if !FailCOUNTER! GEQ 1 (
+    echo Error: FailCOUNTER in MsCheckLoop is greater than or equal to 1.
+    pause
+    exit /B 1
+)
 goto MsRun
 
 :MsRun
 set /a COUNTERSS=COUNTER
 cd "%SCRIPT_DIR%"
+echo Running pwrtest.exe /CS /c:1 /d:90 /p:90...
 pwrtest.exe /CS /c:1 /d:90 /p:90
 timeout /t 30
 exit /B 0
@@ -104,6 +110,7 @@ if !COUNTER! LEQ %NUM_ITERATIONS% (
     call :RunS4
     if errorlevel 1 (
         echo Error: S4 test failed on iteration !COUNTER!.
+        pause
         exit /B 1
     )
     goto S4Loop
@@ -121,12 +128,17 @@ set num="2:"
 for /f "tokens=1*delims=:" %%i in ('findstr/n . DEV_loopCount.txt ^| findstr/b %num%') do (
     set /a FailCOUNTER=%%j
 )
-if !FailCOUNTER! GEQ 1 exit /B 1
+if !FailCOUNTER! GEQ 1 (
+    echo Error: FailCOUNTER in S4CheckLoop is greater than or equal to 1.
+    pause
+    exit /B 1
+)
 goto S4Run
 
 :S4Run
 set /a COUNTERSS=COUNTER
 cd "%SCRIPT_DIR%"
+echo Running pwrtest.exe /sleep /s:4 /c:1 /d:90 /p:180...
 pwrtest.exe /sleep /s:4 /c:1 /d:90 /p:180
 timeout /t 30
 exit /B 0
@@ -137,12 +149,16 @@ echo Setting up WB_Stress...
 powershell -command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%SCRIPT_DIR%%WB_SHORTCUT_NAME%'); $Shortcut.TargetPath = '%SCRIPT_DIR%%WB_SUB_BATCH_NAME%'; $Shortcut.Save()"
 if errorlevel 1 (
     echo Error: Failed to create WB_Stress shortcut.
+    pause
+    exit /B 1
 ) else (
     echo WB_Stress shortcut created successfully.
 )
 move "%SCRIPT_DIR%%WB_SHORTCUT_NAME%" "%STARTUP_FOLDER%"
 if errorlevel 1 (
     echo Error: Failed to move WB_Stress shortcut to startup folder.
+    pause
+    exit /B 1
 ) else (
     echo WB_Stress shortcut moved to startup folder.
 )

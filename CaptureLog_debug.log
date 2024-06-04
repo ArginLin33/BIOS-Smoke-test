@@ -1,0 +1,11 @@
+2024-06-04 08:34:45,487 DEBUG Created directory: D:\BIOS\BIOS_Smoke_test\120
+2024-06-04 08:34:45,487 DEBUG Located batch file at: C:\Users\ARGIN_~1.COM\AppData\Local\Temp\_MEI29482\CaptureLog.bat
+2024-06-04 08:34:45,488 DEBUG Executing batch file for BIOS version: 120
+2024-06-04 08:34:45,508 ERROR Error during command execution: 'C:\Users\ARGIN_~1.COM\AppData\Local\Temp\_MEI29482\CaptureLog.bat' is not recognized as an internal or external command,
+operable program or batch file.
+
+2024-06-04 09:06:36,172 DEBUG Created directory: D:\BIOS\BIOS_Smoke_test\120
+2024-06-04 09:06:36,173 DEBUG Located batch file at: C:\Users\ARGIN_~1.COM\AppData\Local\Temp\_MEI135322\CaptureLog.bat\CaptureLog.bat
+2024-06-04 09:06:36,173 DEBUG Setting RESOURCEDIR to: C:\Users\ARGIN_~1.COM\AppData\Local\Temp\_MEI135322\
+2024-06-04 09:06:36,173 DEBUG Executing batch file for BIOS version: 120
+2024-06-04 09:06:36,173 ERROR Unexpected error during capture log: __init__() got an unexpected keyword argument 'capture_output'

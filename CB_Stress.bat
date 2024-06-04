@@ -59,12 +59,14 @@ if not exist "%COUNT_FILE%" (
     start "" "%SCRIPT_DIR%PlatCfg64W.exe" -w Auto_On:daily
     if errorlevel 1 (
         echo Error: Failed to execute PlatCfg64W.exe -w Auto_On:daily
+        pause
     ) else (
         echo Auto_On:daily set successfully.
     )
     start "" "%SCRIPT_DIR%PlatCfg64W.exe" -w Auto_On_Time:11:03
     if errorlevel 1 (
         echo Error: Failed to execute PlatCfg64W.exe -w Auto_On_Time:11:03
+        pause
     ) else (
         echo Auto_On_Time set to 11:03 successfully.
     )
@@ -91,6 +93,7 @@ echo Setting system time to 10:57 AM...
 time 10:57 AM
 if errorlevel 1 (
     echo Error: Failed to set system time.
+    pause
 ) else (
     echo System time set to 10:57 AM successfully.
 )
@@ -132,20 +135,24 @@ echo Cleaning up CB shortcut...
 del "%STARTUP_FOLDER%\%SHORTCUT_NAME%"
 if exist "%STARTUP_FOLDER%\%SHORTCUT_NAME%" (
     echo Error: Failed to delete CB shortcut.
+    pause
 ) else (
     echo CB shortcut deleted.
 )
 del "%COUNT_FILE%"
 if exist "%COUNT_FILE%" (
     echo Error: Failed to delete count file.
+    pause
 ) else (
     echo Count file deleted.
 )
 echo Running Pass.bat script...
 start "" "%SCRIPT_DIR%PASS.bat"
 if errorlevel 1 (
-    echo Error: Compare_GPIO_Table.py script failed.
+    echo Error: PASS.bat script failed.
+    pause
 ) else (
-    echo Compare_GPIO_Table.py script completed successfully.
+    echo PASS.bat script completed successfully.
 )
+pause
 exit /B 0
