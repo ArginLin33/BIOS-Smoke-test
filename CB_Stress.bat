@@ -31,12 +31,13 @@ if '%errorlevel%' NEQ '0' (
     CD /D "%~dp0"
 
 :: Define variables
+set DESKTOP_DIR=%USERPROFILE%\Desktop
+set COUNT_FILE=%DESKTOP_DIR%\count.txt
 set SCRIPT_DIR=%~dp0
 set SHORTCUT_NAME=CB_Stress.lnk
 set STARTUP_FOLDER=%appdata%\Microsoft\Windows\Start Menu\Programs\Startup
 set RESTART_FLAG=%temp%\restart.flag
 set TEST_PHASE_FLAG=%temp%\test_phase.flag
-set COUNT_FILE=%temp%\count.txt
 set NUM_ITERATIONS=5
 set shutdowndelay=30
 
@@ -63,6 +64,7 @@ if not exist "%COUNT_FILE%" (
     ) else (
         echo Auto_On:daily set successfully.
     )
+    timeout /t 10
     start "" "%SCRIPT_DIR%PlatCfg64W.exe" -w Auto_On_Time:11:03
     if errorlevel 1 (
         echo Error: Failed to execute PlatCfg64W.exe -w Auto_On_Time:11:03
@@ -77,7 +79,7 @@ if not exist "%COUNT_FILE%" (
 :: Run CB test
 :CBTest
 echo Running CB test...
-
+timeout /t 10
 :: Read the count value
 if exist "%COUNT_FILE%" (
     set /p COUNTER=<%COUNT_FILE%
@@ -139,12 +141,17 @@ if exist "%STARTUP_FOLDER%\%SHORTCUT_NAME%" (
 ) else (
     echo CB shortcut deleted.
 )
-del "%COUNT_FILE%"
 if exist "%COUNT_FILE%" (
-    echo Error: Failed to delete count file.
-    pause
+    del "%COUNT_FILE%"
+    del "%DESKTOP_DIR%\basedir.txt"
+    if %errorlevel% neq 0 (
+        echo Error: Failed to delete count file.
+        pause
+    ) else (
+        echo Count file deleted.
+    )
 ) else (
-    echo Count file deleted.
+    echo Count file does not exist.
 )
 echo Running Pass.bat script...
 start "" "%SCRIPT_DIR%PASS.bat"
