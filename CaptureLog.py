@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import simpledialog, messagebox, filedialog
+from tkinter import simpledialog, messagebox, filedialog, StringVar, Label
 import subprocess
 import os
 import sys
@@ -36,17 +36,27 @@ def run_auto_smoke_test():
             logging.debug(f"Directory already exists: {version_dir}")
 
         # Locate the batch file using resource_path
-        batch_file = resource_path('CaptureLog.bat\CaptureLog.bat')
+        exe_dir = os.path.dirname(version_dir)  # This sets BASEDIR to the parent directory of version_dir
+        batch_file = resource_path('CaptureLog.bat\\CaptureLog.bat')
         resource_dir = resource_path('')
         logging.debug(f"Located batch file at: {batch_file}")
         logging.debug(f"Setting RESOURCEDIR to: {resource_dir}")
+        logging.debug(f"Setting EXEDIR to: {exe_dir}")
 
-        # Execute the batch file, passing the version and BASEDIR as arguments
+        # Create basedir.txt on the desktop with the exe_dir path
+        desktop_path = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+        basedir_file_path = os.path.join(desktop_path, 'basedir.txt')
+        with open(basedir_file_path, 'w') as f:
+            f.write(exe_dir)
+        logging.debug(f"Created basedir.txt on the desktop with EXEDIR path: {exe_dir}")
+
+        # Execute the CaptureLog.bat file, passing the version and BASEDIR as arguments
         logging.debug(f"Executing batch file for BIOS version: {version}")
         try:
             env = os.environ.copy()
             env['RESOURCEDIR'] = resource_dir
-            env['BASEDIR'] = version_dir
+            env['BASEDIR'] = version_dir  # Use version_dir for this batch file
+            env['EXEDIR'] = exe_dir
             subprocess.run(['cmd.exe', '/c', batch_file, version], env=env, check=True)
         except Exception as e:
             logging.error(f"Unexpected error during capture log: {e}")
@@ -57,10 +67,33 @@ def run_auto_smoke_test():
             compare_all(preversion_dir, version_dir, show_message=False)
         except Exception as e:
             logging.error(f"Unexpected error during comparison: {e}")
-			
-        # Locate the batch file using resource_path
-        batch_file = resource_path('MSS4WBCB_Error_Stop.bat\MSS4WBCB_Error_Stop.bat')
 
+        # Continue with other batch files and processes if needed
+        # For example:
+        try:
+            logging.debug("Executing BART_Compare")
+            compare_brat(preversion_dir, version_dir, show_message=False)
+            logging.debug("Executing Check_PCD")
+            check_pcd(preversion_dir, version_dir, show_message=False)
+            logging.debug("Executing Compare_SMBIOS")
+            compare_smbios(preversion_dir, version_dir, show_message=False)
+        except Exception as e:
+            logging.error(f"Unexpected error during additional comparisons: {e}")
+
+        # Locate the MSS4WBCB_Error_Stop.bat batch file and execute it
+        try:
+            batch_file = resource_path('MSS4WBCB_Error_Stop.bat\\MSS4WBCB_Error_Stop.bat')
+            logging.debug(f"Located batch file at: {batch_file}")
+            logging.debug(f"Setting RESOURCEDIR to: {resource_dir}")
+            logging.debug(f"Setting BASEDIR to: {exe_dir}")
+
+            env = os.environ.copy()
+            env['RESOURCEDIR'] = resource_dir
+            env['BASEDIR'] = exe_dir  # Use exe_dir for this batch file
+            logging.debug("Executing MSS4WBCB_Error_Stop.bat")
+            subprocess.run(['cmd.exe', '/c', batch_file], env=env, check=True)
+        except Exception as e:
+            logging.error(f"Unexpected error during MSS4WBCB_Error_Stop execution: {e}")
 
 def run_compare_log():
     """
@@ -87,7 +120,7 @@ def capture_log():
             logging.debug(f"Directory already exists: {version_dir}")
 
         # Locate the batch file using resource_path
-        batch_file = resource_path('CaptureLog.bat\CaptureLog.bat')
+        batch_file = resource_path('CaptureLog.bat\\CaptureLog.bat')
         resource_dir = resource_path('')
         logging.debug(f"Located batch file at: {batch_file}")
         logging.debug(f"Setting RESOURCEDIR to: {resource_dir}")
@@ -102,49 +135,68 @@ def capture_log():
         except Exception as e:
             logging.error(f"Unexpected error during capture log: {e}")
 
-def find_different_pairs(lines_a, lines_b):
+def find_different_pairs(lines_a, lines_b, is_gpio=False):
     """
-    Function to find the first index where lines differ between two files.
-    
+    Function to find differences between two lists of lines.
+
     Args:
     lines_a (list): List of lines from the first file.
     lines_b (list): List of lines from the second file.
-    
-    Returns:
-    list: List of all different GPP pairs.
-    """
-    diff_GPP_list = []
-    temp_a = []
-    temp_b = []
-    is_diff = False
-    for (line_a, line_b) in zip(lines_a, lines_b):
-        # Check if the current line starts with predefined keywords and if the content differs
-        if line_a.strip().startswith(('Pad Name', 'Net Name', 'GPIO Tx State', 'GPIO Rx State', 'GPIO Tx Disable', 'GPIO Rx Disable', 'Pad Mode')):
-            temp_a.append(line_a)
-            temp_b.append(line_b)
-            if line_a.split(':')[-1].strip() != line_b.split(':')[-1].strip():
-                is_diff = True
-            if line_a.strip().startswith(('Pad Mode')):
-                # If two pairs different, add to diff_GPP_list
-                if is_diff:
-                    diff_GPP_list.append([list(temp_a), list(temp_b)])
-                temp_a.clear()
-                temp_b.clear()
-                is_diff = False
-    # Return None if the files are identical
-    return diff_GPP_list
+    is_gpio (bool): Whether the comparison is for GPIO files.
 
-def compare_file_pairs(folder_a, folder_b, file_names):
+    Returns:
+    list: List of all different pairs.
+    """
+    if is_gpio:
+        # Original GPIO comparison logic
+        diff_GPP_list = []
+        temp_a = []
+        temp_b = []
+        is_diff = False
+        for (line_a, line_b) in zip(lines_a, lines_b):
+            # Check if the current line starts with predefined keywords and if the content differs
+            if line_a.strip().startswith(('Pad Name', 'Net Name', 'GPIO Tx State', 'GPIO Rx State', 'GPIO Tx Disable', 'GPIO Rx Disable', 'Pad Mode')):
+                temp_a.append(line_a)
+                temp_b.append(line_b)
+                if line_a.split(':')[-1].strip() != line_b.split(':')[-1].strip():
+                    is_diff = True
+                if line_a.strip().startswith(('Pad Mode')):
+                    # If two pairs different, add to diff_GPP_list
+                    if is_diff:
+                        diff_GPP_list.append([list(temp_a), list(temp_b)])
+                    temp_a.clear()
+                    temp_b.clear()
+                    is_diff = False
+        # Return None if the files are identical
+        return diff_GPP_list
+    else:
+        # Non-GPIO comparison logic
+        diff_pairs = []
+        lines_a_dict = {line[:10]: line.strip() for line in lines_a}
+        lines_b_dict = {line[:10]: line.strip() for line in lines_b}
+
+        all_keys = set(lines_a_dict.keys()).union(set(lines_b_dict.keys()))
+
+        for key in all_keys:
+            line_a = lines_a_dict.get(key, "")
+            line_b = lines_b_dict.get(key, "")
+            if line_a != line_b:
+                diff_pairs.append((line_a, line_b))
+
+        return diff_pairs
+
+def compare_file_pairs(folder_a, folder_b, file_names, is_gpio=False):
     """
     Compare pairs of files from two folders and retrieve differences.
-    
+
     Args:
     folder_a (str): Path to the first folder.
     folder_b (str): Path to the second folder.
     file_names (list): List of file names to compare.
-    
+    is_gpio (bool): Whether the comparison is for GPIO files.
+
     Returns:
-    list: list containing all different GPP pairs.
+    list: List containing all different pairs.
     """
     differences = []
     is_diff = False
@@ -162,39 +214,51 @@ def compare_file_pairs(folder_a, folder_b, file_names):
             logging.error(f"Error reading files: {file_a} or {file_b}. Error: {e}")
             continue
 
-        # Find different GPP pairs
-        diff_pairs = find_different_pairs(lines_a, lines_b)
+        # Find different pairs
+        diff_pairs = find_different_pairs(lines_a, lines_b, is_gpio)
         # Store the difference information if differences exist
         if len(diff_pairs) != 0:
             is_diff = True
             for j in diff_pairs:
                 differences[i].append(j)
+                logging.debug(f"Differences found in file {file_names[i]}: {j}")
     if is_diff:
         return differences
     else:
         return None
 
-
-def save_differences(differences, output_file, file_names, folder_a, folder_b):
+def save_differences(differences, output_file, file_names, folder_a, folder_b, is_gpio=False):
     """
     Save differences to a file.
-    
+
     Args:
     differences (list): List of differences.
     output_file (str): Path to the output file.
+    file_names (list): List of file names compared.
+    folder_a (str): Path to the first folder.
+    folder_b (str): Path to the second folder.
+    is_gpio (bool): Whether the comparison is for GPIO files.
     """
     with open(output_file, 'w', encoding='utf-8') as diff_file:
         for file_index in range(len(differences)):
             if len(differences[file_index]) != 0:
                 # Write the file name and fixed content to the output file
                 diff_file.write(f"Differences in {file_names[file_index]}:\n")
-                for diff_pairs in differences[file_index]:
-                    diff_file.write(f"Previous BIOS Version folder   : {folder_a}\n")
-                    for diff_pairs_file_a in diff_pairs[0]:
-                        diff_file.write(f"{diff_pairs_file_a}")
-                    diff_file.write(f"Formal BIOS Version folder     : {folder_b}\n")
-                    for diff_pairs_file_b in diff_pairs[1]:
-                        diff_file.write(f"{diff_pairs_file_b}")
+                if is_gpio:
+                    for diff_pairs in differences[file_index]:
+                        diff_file.write(f"Previous BIOS Version folder   : {folder_a}\n")
+                        for diff_pairs_file_a in diff_pairs[0]:
+                            diff_file.write(f"{diff_pairs_file_a}")
+                        diff_file.write(f"Formal BIOS Version folder     : {folder_b}\n")
+                        for diff_pairs_file_b in diff_pairs[1]:
+                            diff_file.write(f"{diff_pairs_file_b}")
+                        diff_file.write(f"\n")
+                else:
+                    for diff_pair in differences[file_index]:
+                        diff_file.write(f"Previous BIOS Version folder   : {folder_a}\n")
+                        diff_file.write(f"{diff_pair[0]}\n")
+                        diff_file.write(f"Formal BIOS Version folder     : {folder_b}\n")
+                        diff_file.write(f"{diff_pair[1]}\n")
                     diff_file.write(f"\n")
 
 def compare_generic(folder_a, folder_b, file_pattern, output_log, gpio=False, pcd=False, show_message=True):
@@ -217,13 +281,13 @@ def compare_generic(folder_a, folder_b, file_pattern, output_log, gpio=False, pc
     file_names = [f for f in os.listdir(folder_a) if file_pattern in f and os.path.isfile(os.path.join(folder_a, f))]
     file_names = [f for f in file_names if f in os.listdir(folder_b)]
 
-    differences = compare_file_pairs(folder_a, folder_b, file_names)
+    differences = compare_file_pairs(folder_a, folder_b, file_names, is_gpio=gpio)
 
     if not differences:
         if show_message:
             logging.debug("Result: PASS: No differences found.")
     else:
-        save_differences(differences, output_log, file_names, folder_a, folder_b)
+        save_differences(differences, output_log, file_names, folder_a, folder_b, is_gpio=gpio)
         if show_message:
             logging.debug(f"Result: Files are different. Differences saved to {output_log}.")
 
@@ -243,7 +307,7 @@ def check_pcd(folder_a, folder_b, show_message=True):
     """
     Function to compare PCD files.
     """
-    compare_generic(folder_a, folder_b, 'Setup.txt', 'PCD_differences.txt', pcd=True, show_message=show_message)
+    compare_generic(folder_a, folder_b, 'Setup.txt', 'Setup_differences.txt', pcd=True, show_message=show_message)
 
 def compare_smbios(folder_a, folder_b, show_message=True):
     """
@@ -267,15 +331,29 @@ root.geometry("500x500")
 root.resizable(False, False)
 
 # Add version label
-version_label = tk.Label(root, text="ver0.0.1")
+version_label = tk.Label(root, text="ver0.0.2")
 version_label.pack(side="bottom", pady=5)
 
-# Buttons for initiating tests
-capture_log_button = tk.Button(root, text="Capture Log", command=capture_log)
-capture_log_button.pack(pady=5)
+# Test Label and Dropdown
+cpu_frame = tk.Frame(root)
+cpu_frame.pack(pady=10)
 
+cpu_label = tk.Label(cpu_frame, text="CPU Name")
+cpu_label.pack(side="left", padx=10)
+
+cpu_var = StringVar(root)
+cpu_var.set("")  # Default value
+
+cpu_options = ["", "MTL", "RPL_S C0", "RPL_S C0"]
+cpu_menu = tk.OptionMenu(cpu_frame, cpu_var, *cpu_options)
+cpu_menu.pack(side="left")
+
+# Buttons for initiating tests
 auto_smoke_test_button = tk.Button(root, text="Auto Smoke Test", command=run_auto_smoke_test)
 auto_smoke_test_button.pack(pady=5)
+
+capture_log_button = tk.Button(root, text="Capture Log", command=capture_log)
+capture_log_button.pack(pady=5)
 
 compare_log_button = tk.Button(root, text="Compare Log", command=run_compare_log)
 compare_log_button.pack(pady=5)

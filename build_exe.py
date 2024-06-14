@@ -58,7 +58,8 @@ def create_spec_file(entry_script, all_files, output_spec, include_debug):
         f.write(f"          upx=True,\n")
         f.write(f"          upx_exclude=[],\n")
         f.write(f"          runtime_tmpdir=None,\n")
-        f.write(f"          console={'True' if include_debug else 'False'})\n")
+        f.write(f"          console={'True' if include_debug else 'False'},\n")
+        f.write(f"          manifest='CaptureLog.manifest')\n")
 
 def handle_remove_readonly(func, path, exc):
     """Clear the readonly bit and reattempt the removal."""

@@ -3,6 +3,7 @@ setlocal
 set Version=%1
 set BASEDIR=%BASEDIR%
 set RESOURCEDIR=%RESOURCEDIR%
+set EXEDIR=%EXEDIR%
 
 :: Check for admin rights
 :: BatchGotAdmin
@@ -45,7 +46,7 @@ if not exist "%BASEDIR%" (
 if not exist "%BASEDIR%\GPIO" mkdir "%BASEDIR%\GPIO"
 
 :: Step 1: FPTW64.exe and move ROM file
-cd /d "%RESOURCEDIR%MEinfo\MTL\FPTW64.exe"
+cd /d "%EXEDIR%\MEinfo\MTL"
 echo Running FPTW64.exe...
 FPTW64.exe -d %Version%.rom
 timeout /t 5
@@ -56,7 +57,7 @@ if errorlevel 1 (
     goto end
 )
 
-cd /d "%RESOURCEDIR%\BRAT\BRAT.exe"
+cd /d "%EXEDIR%\BRAT"
 echo Running BRAT.exe...
 BRAT.exe "%BASEDIR%\%Version%.rom" > "%BASEDIR%\BRAT.txt"
 timeout /t 5
@@ -67,7 +68,7 @@ if errorlevel 1 (
 )
 
 :: Step 2: Save MEinfo log
-cd /d "%RESOURCEDIR%MEinfo\MTL\MEInfoWin64.exe"
+cd /d "%EXEDIR%\MEinfo\MTL"
 echo Running MEInfoWin64.exe...
 MEInfoWin64.exe > "%BASEDIR%\Meinfo.txt"
 timeout /t 5
@@ -90,7 +91,7 @@ if errorlevel 1 (
 )
 
 :: Step 4: Save SMBIOS log
-cd /d "%RESOURCEDIR%SmbiosDump64\SmbiosDump64.exe"
+cd /d "%RESOURCEDIR%\SmbiosDump64\SmbiosDump64.exe"
 echo Running SmbiosDump64.exe...
 SmbiosDump64.exe > "%BASEDIR%\SMBIOS.txt"
 timeout /t 5
@@ -101,7 +102,7 @@ if errorlevel 1 (
 )
 
 :: Step 5: Save Sensor log
-cd /d "%RESOURCEDIR%\ISSU.exe"
+cd /d "%EXEDIR%\MEinfo\MTL"
 echo Running ISSU.exe...
 ISSU.exe -BIST > Sensor.txt
 move Sensor.txt "%BASEDIR%"
@@ -112,7 +113,7 @@ if errorlevel 1 (
     goto end
 )
 
-:: GPIO Config operations - using the installation directory
+:: Step 6: GPIO Config operations - using the installation directory
 cd "C:\Program Files\Intel Corporation\Intel(R)GPIO3.x"
 for %%i in (0 1 3 4 5) do (
     echo Running GPIOConfig.exe for Community%%i...
